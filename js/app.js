@@ -1,3 +1,57 @@
+
+// Adds a circle collider to the parent object located at the parents
+// location with an offset and radius.
+var addCollider = function(parent, xOffset, yOffset, radius) {
+
+    var collider = {
+        // The parent object of the collider
+        parent : parent,
+
+        // x position of the collider, dependent on the parents position
+        x : function() {
+            return this.parent.x + this.xOffset;
+        },
+
+        // y position of the collider, dependent on the parents position
+        y : function() {
+            return this.parent.y + this.yOffset;
+        },
+
+        // Checks if collided with another collider
+        checkCollisions : function(other) {
+            var x = this.x() - other.x();
+            var y = this.y() - other.y();
+
+            // Distance between the two colliders
+            var distance = Math.sqrt(x*x + y*y);
+
+            // If the distance between colliders is less than the sum of
+            // their radiuses, then their colliders are overlapping.
+            if (distance < this.radius + other.radius) {
+                this.parent.respawn();
+                return true;
+            }
+            return false;
+        },
+
+        // Provides a visual representation of the collider
+        show : function() {
+            ctx.strokeStyle = 'red';
+            ctx.beginPath();
+            ctx.arc(this.x(), this.y(), this.radius, 0, 2*Math.PI);
+            ctx.stroke();
+        }
+    };
+
+    // Add the properties to the collider but ensure defaults at least exist
+    collider.radius = (radius === NaN) ? 10 : radius;
+    collider.xOffset = (xOffset === NaN) ? 0 : xOffset;
+    collider.yOffset = (yOffset === NaN) ? 0 : yOffset;
+
+    // Add the collider to the parent
+    parent.collider = collider;
+};
+
 // Enemies our player must avoid
 var Enemy = function() {
     // Variables applied to each of our instances go here,
@@ -10,6 +64,9 @@ var Enemy = function() {
     this.moveYAmt = 83;
     this.speed;
     this.minY = 58;
+
+    // Ensure each enemy has a collider
+    addCollider(this, 55, 110, 30);
 };
 
 // Resets the enemy location, speed, and lane once it has left
@@ -50,14 +107,19 @@ Enemy.prototype.update = function(dt) {
 // Draw the enemy on the screen, required method for game
 Enemy.prototype.render = function() {
     ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
+    this.collider.show();
 };
 
 // This class requires an update(), render() and
 // a handleInput() method.
 var Player = function() {
     this.sprite = 'images/char-boy.png';
+
     // Create the position variables
     this.x = this.y = undefined;
+
+    // Ensure the player has a collider
+    addCollider(this, 50, 120, 30);
 };
 
 // Start creates all the properties needed for a player object.
@@ -87,7 +149,7 @@ Player.prototype.start = function() {
     // Player needs to respawn at least once to start in the
     // correct location
     this.respawn();
-}
+};
 
 // Reset the player position to the spawn location and ensure
 // no movement is going to be applied afterwards
@@ -101,7 +163,6 @@ Player.prototype.respawn = function() {
 // Update the player's position, required method for game
 // Parameter: dt, a time delta between ticks
 Player.prototype.update = function(dt) {
-
     // If the player has no x position, call the start function
     // only once to create a new player object with a position
     if (this.x === undefined) {
@@ -133,6 +194,7 @@ Player.prototype.update = function(dt) {
 // Draw the player on the screen
 Player.prototype.render = function() {
     ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
+    this.collider.show();
 };
 
 // Update the adjustment variables that will update the players
@@ -170,3 +232,12 @@ document.addEventListener('keyup', function(e) {
 
     player.handleInput(allowedKeys[e.keyCode]);
 });
+
+// Check if the player has collided with any enemy objects
+var checkCollisions = function () {
+    for (var i = 0; i < allEnemies.length; i++) {
+        if (player.collider.checkCollisions(allEnemies[i].collider)) {
+            break;
+        }
+    }
+};
