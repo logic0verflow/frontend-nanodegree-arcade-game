@@ -79,8 +79,10 @@ var Engine = (function(global) {
      * on the entities themselves within your app.js file).
      */
     function update(dt) {
-        updateEntities(dt);
-        checkCollisions();
+        if ( !selectingCharacter ) {
+            updateEntities(dt);
+            checkCollisions();
+        }
     }
 
     /* This is called by the update function and loops through all of the
@@ -97,30 +99,13 @@ var Engine = (function(global) {
         player.update();
     }
 
-    /* This function initially draws the "game level", it will then call
-     * the renderEntities function. Remember, this function is called every
-     * game tick (or loop of the game engine) because that's how games work -
-     * they are flipbooks creating the illusion of animation but in reality
-     * they are just drawing the entire screen over and over.
+    /* Takes an array of image URLs that will be drawn where each row of the
+     * map will be filled with the corresponding image from the array.
      */
-    function render() {
-
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        /* This array holds the relative URL to the image used
-         * for that particular row of the game level.
-         */
-        var rowImages = [
-                'images/water-block.png',   // Top row is water
-                'images/stone-block.png',   // Row 1 of 3 of stone
-                'images/stone-block.png',   // Row 2 of 3 of stone
-                'images/stone-block.png',   // Row 3 of 3 of stone
-                'images/grass-block.png',   // Row 1 of 2 of grass
-                'images/grass-block.png'    // Row 2 of 2 of grass
-            ],
-            numRows = 6,
-            numCols = 5,
-            row, col;
+    function renderMap(rowImages) {
+        var numRows = 6,
+        numCols = 5,
+        row, col;
 
         /* Loop through the number of rows and columns we've defined above
          * and, using the rowImages array, draw the correct image for that
@@ -138,8 +123,62 @@ var Engine = (function(global) {
                 ctx.drawImage(Resources.get(rowImages[row]), col * 101, row * 83);
             }
         }
+    }
 
-        renderEntities();
+    /* This function initially draws the "game level", it will then call
+     * the renderEntities function. Remember, this function is called every
+     * game tick (or loop of the game engine) because that's how games work -
+     * they are flipbooks creating the illusion of animation but in reality
+     * they are just drawing the entire screen over and over.
+     */
+    function render() {
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        if (selectingCharacter) {
+            /* This array holds the relative URL to the image used
+             * for that particular row of the game level.
+             */
+            var rowImages = [
+                'images/water-block.png',
+                'images/water-block.png',
+                'images/water-block.png',
+                'images/stone-block.png',
+                'images/water-block.png',
+                'images/water-block.png'
+            ];
+
+            renderMap(rowImages);
+
+            // horizontal grid spacing
+            var gridSpacing = 101;
+
+            // The row where the character options are drawn
+            var row = 210;
+
+            // draw the character options side by side on the same row
+            ctx.drawImage(Resources.get('images/Selector.png'), selector.x, row);
+
+            // Loop through all possible character options and draw them
+            for (var i = 0; i < selector.characters.length; i++) {
+                ctx.drawImage(Resources.get(selector.characters[i]), gridSpacing * i, row);
+            }
+
+        } else {
+
+            var rowImages = [
+                'images/water-block.png',   // Top row is water
+                'images/stone-block.png',   // Row 1 of 3 of stone
+                'images/stone-block.png',   // Row 2 of 3 of stone
+                'images/stone-block.png',   // Row 3 of 3 of stone
+                'images/grass-block.png',   // Row 1 of 2 of grass
+                'images/grass-block.png'    // Row 2 of 2 of grass
+            ];
+
+            renderMap(rowImages);
+
+            renderEntities();
+        };
     }
 
     /* This function is called by the render function and is called on each game
@@ -174,7 +213,13 @@ var Engine = (function(global) {
         'images/water-block.png',
         'images/grass-block.png',
         'images/enemy-bug.png',
-        'images/char-boy.png'
+        'images/char-boy.png',
+        'images/char-boy.png',
+        'images/char-cat-girl.png',
+        'images/char-pink-girl.png',
+        'images/char-princess-girl.png',
+        'images/char-horn-girl.png',
+        'images/Selector.png'
     ]);
     Resources.onReady(init);
 

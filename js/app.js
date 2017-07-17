@@ -1,3 +1,6 @@
+// Triggers different branches to display a character select screen or
+// to skip passed character selection and start the game loop.
+var selectingCharacter = true;
 
 // Adds a circle collider to the parent object located at the parents
 // location with an offset and radius.
@@ -220,17 +223,60 @@ var allEnemies = [new Enemy(), new Enemy(), new Enemy()];
 // Place the player object in a variable called player
 var player = new Player();
 
+// Selector handles the select character screen by setting movement bounds and
+// character sprites when handling the input
+var selector = {
+
+    // How much the selector moves horizontally
+    moveHAmt : 101,
+
+    // Current player selected
+    x : 0,
+
+    handleInput : function(key) {
+        switch (key) {
+            case 'right' :
+                this.x += (this.x === this.moveHAmt * 4) ? 0 : this.moveHAmt;
+                break;
+            case 'left' :
+                this.x -= (this.x === 0) ? 0 : this.moveHAmt;
+                break;
+            case 'return' :
+                player.sprite = this.characters[this.x / this.moveHAmt];
+                selectingCharacter = false;
+                break;
+        };
+    },
+
+    // Character sprite URLs, used here where a character is selected and
+    // when rendering characters
+    characters : [
+        'images/char-boy.png',
+        'images/char-cat-girl.png',
+        'images/char-pink-girl.png',
+        'images/char-princess-girl.png',
+        'images/char-horn-girl.png'
+    ]
+};
+
 // This listens for key presses and sends the keys to your
 // Player.handleInput() method. You don't need to modify this.
 document.addEventListener('keyup', function(e) {
     var allowedKeys = {
+        13: 'return',
         37: 'left',
         38: 'up',
         39: 'right',
         40: 'down'
     };
 
-    player.handleInput(allowedKeys[e.keyCode]);
+    // Input is handled differently when in the character select screen versus
+    // the actual game play screen.
+    if (selectingCharacter) {
+        selector.handleInput(allowedKeys[e.keyCode]);
+    } else {
+        player.handleInput(allowedKeys[e.keyCode]);
+    }
 });
 
 // Check if the player has collided with any enemy objects
