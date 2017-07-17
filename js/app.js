@@ -31,7 +31,6 @@ var addCollider = function(parent, xOffset, yOffset, radius) {
             // If the distance between colliders is less than the sum of
             // their radiuses, then their colliders are overlapping.
             if (distance < this.radius + other.radius) {
-                this.parent.respawn();
                 return true;
             }
             return false;
@@ -161,6 +160,9 @@ Player.prototype.respawn = function() {
     this.y = this.maxY;
     this.xAdjustment = 0;
     this.yAdjustment = 0;
+
+    // Add an item to the map when the player respawns
+    allItems = [new Item(2)];
 };
 
 // Update the player's position, required method for game
@@ -218,10 +220,50 @@ Player.prototype.handleInput = function(dir) {
     }
 };
 
+// Items are collectibles that spawn at a random location on the map
+// when the player respawns.
+var Item = function(spriteIndex) {
+
+    // Select the sprite based on index
+    switch (spriteIndex) {
+        case 0:
+            this.sprite = 'images/Gem Blue.png';
+
+            // How many points the item is worth
+            this.scoreValue = 10;
+            break;
+        case 1:
+            this.sprite = 'images/Gem Green.png';
+            this.scoreValue = 20;
+            break;
+        case 2:
+            this.sprite = 'images/Gem Orange.png';
+            this.scoreValue = 30;
+            break;
+    };
+
+    // Select a random location within the vehicle lanes
+    this.x = (Math.floor(Math.random() * 5) ) * 101;
+    this.y = 58;
+    this.y += (Math.floor(Math.random() * 3) ) * 83;
+
+    addCollider(this, 50, 110, 45);
+};
+
+// Draw the item
+Item.prototype.render = function() {
+    ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
+    this.collider.show();
+};
+
 // Place all enemy objects in an array called allEnemies
 var allEnemies = [new Enemy(), new Enemy(), new Enemy()];
+
 // Place the player object in a variable called player
 var player = new Player();
+
+// Place all items available in an array
+var allItems = [];
 
 // Selector handles the select character screen by setting movement bounds and
 // character sprites when handling the input
@@ -279,11 +321,22 @@ document.addEventListener('keyup', function(e) {
     }
 });
 
-// Check if the player has collided with any enemy objects
+// Check if the player has collided with any objects
 var checkCollisions = function () {
+
+    // First check if player collided with enemy object
     for (var i = 0; i < allEnemies.length; i++) {
         if (player.collider.checkCollisions(allEnemies[i].collider)) {
+            player.respawn();
             break;
+        }
+    }
+
+    // Check if player collided with any items
+    for (var i = 0; i < allItems.length; i++) {
+        if (player.collider.checkCollisions(allItems[i].collider)) {
+            // item collected, remove it from the game
+            allItems.splice(i, 1);
         }
     }
 };
