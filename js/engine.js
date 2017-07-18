@@ -99,6 +99,13 @@ var Engine = (function(global) {
         player.update();
     }
 
+    // Draws the players score on the canvas.
+    function renderScore() {
+        ctx.textAlign = 'left';
+        ctx.font = "48px 'comic sans ms'";
+        ctx.fillText('Score: ' + player.score, 0, 48);
+    }
+
     /* Takes an array of image URLs that will be drawn where each row of the
      * map will be filled with the corresponding image from the array.
      */
@@ -135,11 +142,19 @@ var Engine = (function(global) {
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+        var rowImages;
+
         if (selectingCharacter) {
+
+            // Create title for character selection screen
+            ctx.font = "36px 'comic sans ms'";
+            ctx.textAlign = 'center';
+            ctx.fillText('Choose your character!', ctx.canvas.width / 2, 36);
+
             /* This array holds the relative URL to the image used
              * for that particular row of the game level.
              */
-            var rowImages = [
+            rowImages = [
                 'images/water-block.png',
                 'images/water-block.png',
                 'images/water-block.png',
@@ -166,7 +181,7 @@ var Engine = (function(global) {
 
         } else {
 
-            var rowImages = [
+            rowImages = [
                 'images/water-block.png',   // Top row is water
                 'images/stone-block.png',   // Row 1 of 3 of stone
                 'images/stone-block.png',   // Row 2 of 3 of stone
@@ -178,7 +193,9 @@ var Engine = (function(global) {
             renderMap(rowImages);
 
             renderEntities();
-        };
+
+            renderScore();
+        }
     }
 
     /* This function is called by the render function and is called on each game

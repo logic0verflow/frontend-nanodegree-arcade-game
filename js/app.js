@@ -11,19 +11,19 @@ var addCollider = function(parent, xOffset, yOffset, radius) {
         parent : parent,
 
         // x position of the collider, dependent on the parents position
-        x : function() {
+        getX : function() {
             return this.parent.x + this.xOffset;
         },
 
         // y position of the collider, dependent on the parents position
-        y : function() {
+        getY : function() {
             return this.parent.y + this.yOffset;
         },
 
         // Checks if collided with another collider
         checkCollisions : function(other) {
-            var x = this.x() - other.x();
-            var y = this.y() - other.y();
+            var x = this.getX() - other.getX();
+            var y = this.getY() - other.getY();
 
             // Distance between the two colliders
             var distance = Math.sqrt(x*x + y*y);
@@ -40,15 +40,15 @@ var addCollider = function(parent, xOffset, yOffset, radius) {
         show : function() {
             ctx.strokeStyle = 'red';
             ctx.beginPath();
-            ctx.arc(this.x(), this.y(), this.radius, 0, 2*Math.PI);
+            ctx.arc(this.getX(), this.getY(), this.radius, 0, 2*Math.PI);
             ctx.stroke();
         }
     };
 
     // Add the properties to the collider but ensure defaults at least exist
-    collider.radius = (radius === NaN) ? 10 : radius;
-    collider.xOffset = (xOffset === NaN) ? 0 : xOffset;
-    collider.yOffset = (yOffset === NaN) ? 0 : yOffset;
+    collider.radius = (isNaN(radius)) ? 10 : radius;
+    collider.xOffset = (isNaN(xOffset)) ? 0 : xOffset;
+    collider.yOffset = (isNaN(yOffset)) ? 0 : yOffset;
 
     // Add the collider to the parent
     parent.collider = collider;
@@ -62,9 +62,16 @@ var Enemy = function() {
     // The image/sprite for our enemies, this uses
     // a helper we've provided to easily load images
     this.sprite = 'images/enemy-bug.png';
-    this.x = this.y = undefined;
+    this.x = undefined;
+    this.y = undefined;
+
+    // Amount to move when changing lanes
     this.moveYAmt = 83;
-    this.speed;
+
+    // How fast the enemy travels, default is 1
+    this.speed = 1;
+
+    // Enemy lane positions start here at minimum
     this.minY = 58;
 
     // Ensure each enemy has a collider
@@ -109,7 +116,7 @@ Enemy.prototype.update = function(dt) {
 // Draw the enemy on the screen, required method for game
 Enemy.prototype.render = function() {
     ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
-    this.collider.show();
+    // this.collider.show();
 };
 
 // This class requires an update(), render() and
@@ -119,6 +126,8 @@ var Player = function() {
 
     // Create the position variables
     this.x = this.y = undefined;
+
+    this.score = 0;
 
     // Ensure the player has a collider
     addCollider(this, 50, 120, 30);
@@ -158,11 +167,12 @@ Player.prototype.start = function() {
 Player.prototype.respawn = function() {
     this.x = this.moveHAmt * 2;
     this.y = this.maxY;
+
     this.xAdjustment = 0;
     this.yAdjustment = 0;
 
     // Add an item to the map when the player respawns
-    allItems = [new Item(2)];
+    allItems = [new Item()];
 };
 
 // Update the player's position, required method for game
@@ -192,6 +202,10 @@ Player.prototype.update = function(dt) {
 
     // Player reached the water, go back to starting position
     if (this.y === this.minY) {
+
+        // Player reward for reaching the water
+        this.score += 5;
+
         this.respawn();
     }
 };
@@ -199,30 +213,26 @@ Player.prototype.update = function(dt) {
 // Draw the player on the screen
 Player.prototype.render = function() {
     ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
-    this.collider.show();
+    // this.collider.show();
 };
 
 // Update the adjustment variables that will update the players
 // position based on the input
 Player.prototype.handleInput = function(dir) {
     this.xAdjustment = 0;
-    if (dir === 'left') {
-        this.xAdjustment -= this.moveHAmt;
-    }
-    if (dir === 'right') {
-        this.xAdjustment += this.moveHAmt;
-    }
-    if (dir === 'up') {
-        this.yAdjustment -= this.moveVAmt;
-    }
-    if (dir === 'down') {
-        this.yAdjustment += this.moveVAmt;
-    }
+
+    this.xAdjustment -= (dir === 'left') ? this.moveHAmt : 0;
+    this.xAdjustment += (dir === 'right') ? this.moveHAmt : 0;
+
+    this.yAdjustment -= (dir === 'up') ? this.moveVAmt : 0;
+    this.yAdjustment += (dir === 'down') ? this.moveVAmt : 0;
 };
 
 // Items are collectibles that spawn at a random location on the map
 // when the player respawns.
-var Item = function(spriteIndex) {
+var Item = function() {
+
+    var spriteIndex = Math.floor(Math.random() * 3) ;
 
     // Select the sprite based on index
     switch (spriteIndex) {
@@ -240,7 +250,7 @@ var Item = function(spriteIndex) {
             this.sprite = 'images/Gem Orange.png';
             this.scoreValue = 30;
             break;
-    };
+    }
 
     // Select a random location within the vehicle lanes
     this.x = (Math.floor(Math.random() * 5) ) * 101;
@@ -253,7 +263,7 @@ var Item = function(spriteIndex) {
 // Draw the item
 Item.prototype.render = function() {
     ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
-    this.collider.show();
+    // this.collider.show();
 };
 
 // Place all enemy objects in an array called allEnemies
@@ -287,7 +297,7 @@ var selector = {
                 player.sprite = this.characters[this.x / this.moveHAmt];
                 selectingCharacter = false;
                 break;
-        };
+        }
     },
 
     // Character sprite URLs, used here where a character is selected and
@@ -323,18 +333,24 @@ document.addEventListener('keyup', function(e) {
 
 // Check if the player has collided with any objects
 var checkCollisions = function () {
+    var i;
 
     // First check if player collided with enemy object
-    for (var i = 0; i < allEnemies.length; i++) {
+    for (i = 0; i < allEnemies.length; i++) {
         if (player.collider.checkCollisions(allEnemies[i].collider)) {
             player.respawn();
+            player.score = 0;
             break;
         }
     }
 
     // Check if player collided with any items
-    for (var i = 0; i < allItems.length; i++) {
+    for (i = 0; i < allItems.length; i++) {
         if (player.collider.checkCollisions(allItems[i].collider)) {
+
+            // Add the gem value to the players score
+            player.score += allItems[i].scoreValue;
+
             // item collected, remove it from the game
             allItems.splice(i, 1);
         }
